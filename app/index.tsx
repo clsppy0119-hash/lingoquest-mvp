@@ -32,19 +32,19 @@ export default function HomeScreen() {
           <Text style={styles.bannerMark}>LQ</Text>
         </View>
         <View style={styles.hudCopy}>
-          <Text style={styles.eyebrow}>LINGOQUEST COMMAND</Text>
-          <Text style={styles.hudTitle}>Dawnwatch Citadel</Text>
+          <Text style={styles.eyebrow}>LINGOQUEST 戰略指揮</Text>
+          <Text style={styles.hudTitle}>晨望主城</Text>
         </View>
         <View style={styles.level}>
-          <Text style={styles.levelTop}>RANK</Text>
+          <Text style={styles.levelTop}>階級</Text>
           <Text style={styles.levelValue}>01</Text>
         </View>
       </View>
 
       <View style={styles.chapterBar}>
         <View>
-          <Text style={styles.chapterLabel}>CAMPAIGN I</Text>
-          <Text style={styles.chapterName}>The First Banner</Text>
+          <Text style={styles.chapterLabel}>第一章</Text>
+          <Text style={styles.chapterName}>初次揚旗</Text>
         </View>
         <Text style={styles.chapterCount}>{occupied ? '1 / 1' : '0 / 1'}</Text>
       </View>
@@ -55,9 +55,9 @@ export default function HomeScreen() {
         <View style={[styles.road, styles.roadOne]} />
         <View style={[styles.road, styles.roadTwo]} />
         <View style={[styles.road, styles.roadThree]} />
-        <TerrainTile style={styles.forestWest} icon="♠" label="Pinewood" />
-        <TerrainTile style={styles.ridgeEast} icon="▲" label="Grey Ridge" />
-        <TerrainTile style={styles.farmSouth} icon="≋" label="Low Fields" />
+        <TerrainTile style={styles.forestWest} icon="♠" label="西側松林" />
+        <TerrainTile style={styles.ridgeEast} icon="▲" label="灰岩山脊" />
+        <TerrainTile style={styles.farmSouth} icon="≋" label="南方平原" />
 
         <View style={styles.compass}>
           <Text style={styles.compassText}>N</Text>
@@ -67,13 +67,13 @@ export default function HomeScreen() {
         <View style={styles.castleWrap}>
           <View style={styles.castleHalo} />
           <Text style={styles.castleIcon}>♜</Text>
-          <Text style={styles.castleTitle}>DAWNWATCH</Text>
-          <Text style={styles.castleSub}>CAPITAL · SAFE</Text>
+          <Text style={styles.castleTitle}>晨望城</Text>
+          <Text style={styles.castleSub}>主城 · 安全</Text>
         </View>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="School territory"
+          accessibilityLabel="學校領地"
           onPress={() => router.push('/territory')}
           style={({ pressed }) => [
             styles.schoolNode,
@@ -89,9 +89,9 @@ export default function HomeScreen() {
             <Text style={styles.nodeFlagText}>{patrolDue ? '!' : occupied ? '◆' : '!'}</Text>
           </View>
           <Text style={styles.schoolIcon}>⌂</Text>
-          <Text style={styles.schoolName}>SCHOOL</Text>
+          <Text style={styles.schoolName}>學校</Text>
           <Text style={styles.schoolState}>
-            {patrolDue ? 'PATROL DUE' : occupied ? 'GARRISONED' : 'AVAILABLE'}
+            {patrolDue ? '待巡邏' : occupied ? '已駐守' : '可進攻'}
           </Text>
         </Pressable>
 
@@ -100,16 +100,12 @@ export default function HomeScreen() {
         </View>
         <View style={styles.fogNode}>
           <Text style={styles.fogIcon}>?</Text>
-          <Text style={styles.fogText}>FOG</Text>
+          <Text style={styles.fogText}>迷霧</Text>
         </View>
         <View style={styles.mapLegend}>
           <View style={styles.legendDot} />
           <Text style={styles.legendText}>
-            {patrolDue
-              ? 'Review patrol waiting'
-              : occupied
-                ? 'Territory secured'
-                : 'Tap School to inspect'}
+            {patrolDue ? '有複習巡邏待完成' : occupied ? '領地已穩固' : '點選學校查看戰情'}
           </Text>
         </View>
       </View>
@@ -127,23 +123,30 @@ export default function HomeScreen() {
           </View>
           <View style={styles.commandCopy}>
             <Text style={styles.commandKicker}>
-              {patrolDue ? 'PATROL ORDER' : occupied ? 'GARRISON REPORT' : 'ACTIVE WAR ORDER'}
+              {patrolDue ? '巡邏命令' : occupied ? '駐軍戰報' : '目前作戰命令'}
             </Text>
-            <Text style={styles.commandTitle}>School · Territory I</Text>
+            <Text style={styles.commandTitle}>學校 · 第一領地</Text>
             <Text style={styles.commandBody}>
               {occupied
                 ? reviewQueue.length
-                  ? `${reviewQueue.length} question${reviewQueue.length === 1 ? ' awaits' : 's await'} patrol review.`
-                  : 'The district is secure. No review patrols remain.'
-                : 'Win the English skirmish to raise your banner over the school.'}
+                  ? `尚有 ${reviewQueue.length} 題待巡邏複習。重新答對即可清除。`
+                  : '領地安全，沒有待完成的複習巡邏。'
+                : '完成三題英文挑戰並答對至少兩題，即可占領學校。'}
             </Text>
           </View>
         </View>
         <PrimaryButton
-          label={patrolDue ? 'MARCH TO PATROL' : occupied ? 'INSPECT GARRISON' : 'MARCH TO SCHOOL'}
+          label={patrolDue ? '前往巡邏' : occupied ? '查看駐軍' : '進軍學校'}
           tone={patrolDue || !occupied ? 'red' : 'gold'}
           onPress={() => router.push('/territory')}
         />
+      </View>
+
+      <View style={styles.helpPanel}>
+        <Text style={styles.helpTitle}>新手作戰指南</Text>
+        <Text style={styles.helpText}>
+          1. 點選學校查看規則　2. 完成三題英文題目　3. 占領後重做錯題完成巡邏
+        </Text>
       </View>
     </Screen>
   );
@@ -406,4 +409,12 @@ const styles = StyleSheet.create({
   commandKicker: { color: colors.gold, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
   commandTitle: { color: colors.ink, fontSize: 19, fontWeight: '900', marginTop: 2 },
   commandBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  helpPanel: {
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    paddingTop: 13,
+    gap: 4,
+  },
+  helpTitle: { color: colors.gold, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  helpText: { color: colors.muted, fontSize: 12, lineHeight: 19 },
 });

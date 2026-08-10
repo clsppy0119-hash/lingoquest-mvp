@@ -19,14 +19,11 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="territory" options={{ title: 'School District' }} />
-        <Stack.Screen
-          name="challenge"
-          options={{ title: 'English Challenge', gestureEnabled: false }}
-        />
+        <Stack.Screen name="territory" options={{ title: '學校領地' }} />
+        <Stack.Screen name="challenge" options={{ title: '英文挑戰', gestureEnabled: false }} />
         <Stack.Screen
           name="result"
-          options={{ title: 'Battle Report', gestureEnabled: false, headerBackVisible: false }}
+          options={{ title: '戰役結果', gestureEnabled: false, headerBackVisible: false }}
         />
       </Stack>
     </>

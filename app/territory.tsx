@@ -17,12 +17,10 @@ export default function TerritoryScreen() {
   return (
     <Screen>
       <View style={styles.theaterHeader}>
-        <Text style={styles.theaterKicker}>EASTERN THEATER · TILE 01</Text>
-        <Text style={styles.theaterTitle}>School District</Text>
+        <Text style={styles.theaterKicker}>東部戰區 · 地塊 01</Text>
+        <Text style={styles.theaterTitle}>學校領地</Text>
         <View style={[styles.statusPlate, occupied && styles.statusOccupied]}>
-          <Text style={styles.statusText}>
-            {occupied ? '◆ BANNER RAISED' : '⚔ HOSTILE FRONTIER'}
-          </Text>
+          <Text style={styles.statusText}>{occupied ? '◆ 已插旗占領' : '⚔ 敵方前線'}</Text>
         </View>
       </View>
 
@@ -32,72 +30,68 @@ export default function TerritoryScreen() {
         <View style={styles.routeRiver} />
         <View style={styles.origin}>
           <Text style={styles.originIcon}>♜</Text>
-          <Text style={styles.nodeLabel}>CAPITAL</Text>
+          <Text style={styles.nodeLabel}>主城</Text>
         </View>
         <View style={styles.routeLine}>
           <Text style={styles.routeArrows}>› › › ›</Text>
         </View>
         <View style={[styles.target, occupied && styles.targetOccupied]}>
           <Text style={styles.targetIcon}>⌂</Text>
-          <Text style={styles.targetName}>SCHOOL</Text>
-          <Text style={styles.targetLevel}>LEVEL I</Text>
+          <Text style={styles.targetName}>學校</Text>
+          <Text style={styles.targetLevel}>等級 1</Text>
         </View>
         <View style={styles.distance}>
-          <Text style={styles.distanceText}>MARCH · 03 MIN</Text>
+          <Text style={styles.distanceText}>行軍時間 · 約 3 分鐘</Text>
         </View>
       </View>
 
       <View style={styles.intelPanel}>
         <View style={styles.intelHeader}>
-          <Text style={styles.intelMark}>INTEL</Text>
-          <Text style={styles.intelState}>{occupied ? 'CONTROLLED' : 'TARGET'}</Text>
+          <Text style={styles.intelMark}>戰區情報</Text>
+          <Text style={styles.intelState}>{occupied ? '我方控制' : '進攻目標'}</Text>
         </View>
-        <Text style={styles.intelTitle}>
-          {occupied ? 'Garrison Briefing' : 'Victory Condition'}
-        </Text>
+        <Text style={styles.intelTitle}>{occupied ? '駐軍簡報' : '勝利條件'}</Text>
         <Text style={styles.copy}>
           {occupied
             ? reviewQueue.length
-              ? `${reviewQueue.length} missed question${reviewQueue.length === 1 ? '' : 's'} remain in the patrol ledger. Correct each one to secure the route.`
-              : 'The district is secure and the patrol ledger is clear.'
-            : `Answer at least ${CONQUEST_MIN_CORRECT} of 3 English questions correctly to occupy this territory.`}
+              ? `巡邏簿中還有 ${reviewQueue.length} 題錯題。每題重新答對後即可完成巡邏。`
+              : '領地安全，巡邏簿目前沒有待複習題目。'
+            : `挑戰共有 3 題英文題目，至少答對 ${CONQUEST_MIN_CORRECT} 題即可占領領地。`}
         </Text>
         <View style={styles.divider} />
         <View style={styles.statRow}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>3</Text>
-            <Text style={styles.statLabel}>ORDERS</Text>
+            <Text style={styles.statLabel}>題目</Text>
           </View>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{CONQUEST_MIN_CORRECT}</Text>
-            <Text style={styles.statLabel}>TO WIN</Text>
+            <Text style={styles.statLabel}>通關</Text>
           </View>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{reviewQueue.length}</Text>
-            <Text style={styles.statLabel}>REVIEW</Text>
+            <Text style={styles.statLabel}>待複習</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.dispatch}>
-        <Text style={styles.dispatchKicker}>{occupied ? 'PATROL ORDER' : 'MARCH ORDER'}</Text>
+        <Text style={styles.dispatchKicker}>{occupied ? '巡邏命令' : '進軍命令'}</Text>
         <Text style={styles.dispatchBody}>
           {occupied
-            ? 'Redeploy to the questions that need reinforcement.'
-            : 'Deploy your language company and take the school banner.'}
+            ? '重新挑戰錯題；全部答對後，複習佇列就會清空。'
+            : '派出語言部隊挑戰三題英文，達成勝利條件後占領學校。'}
         </Text>
       </View>
 
       {occupied ? (
         <PrimaryButton
-          label={
-            reviewQueue.length ? `BEGIN PATROL · ${reviewQueue.length}` : 'PATROL LEDGER CLEAR'
-          }
+          label={reviewQueue.length ? `開始巡邏 · ${reviewQueue.length} 題` : '巡邏簿已清空'}
           disabled={!reviewQueue.length}
           onPress={() => launch('patrol')}
         />
       ) : (
-        <PrimaryButton label="LAUNCH ATTACK" tone="red" onPress={() => launch('conquest')} />
+        <PrimaryButton label="發動進攻" tone="red" onPress={() => launch('conquest')} />
       )}
     </Screen>
   );
