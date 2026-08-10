@@ -1,9 +1,26 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Screen } from '@/components/Screen';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { Screen } from '@/components/Screen';
+import { Territory, TerritoryId, territories } from '@/data/territories';
 import { useGameStore } from '@/store/game';
+import { isTerritoryUnlocked } from '@/store/progress';
 import { colors } from '@/theme';
+
+type NodeState = 'locked' | 'available' | 'occupied' | 'patrol';
+
+const nodePosition = (territoryId: TerritoryId) => {
+  if (territoryId === 'restaurant') return styles.restaurantNode;
+  if (territoryId === 'airport') return styles.airportNode;
+  return styles.schoolNode;
+};
+
+const nodeStateStyle = (state: NodeState) => {
+  if (state === 'locked') return styles.nodeLocked;
+  if (state === 'occupied') return styles.nodeOccupied;
+  if (state === 'patrol') return styles.nodePatrol;
+  return styles.nodeAvailable;
+};
 
 function TerrainTile({ style, icon, label }: { style: object; icon: string; label: string }) {
   return (
@@ -14,16 +31,81 @@ function TerrainTile({ style, icon, label }: { style: object; icon: string; labe
   );
 }
 
+function TerritoryNode({ territory, state }: { territory: Territory; state: NodeState }) {
+  const stateLabel = {
+    locked: '尚未解鎖',
+    available: '可進攻',
+    occupied: '已駐守',
+    patrol: '待巡邏',
+  }[state];
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${territory.name}領地，${stateLabel}`}
+      onPress={() => router.push({ pathname: '/territory', params: { id: territory.id } })}
+      style={({ pressed }) => [
+        styles.territoryNode,
+        nodePosition(territory.id),
+        nodeStateStyle(state),
+        pressed && styles.nodePressed,
+      ]}
+    >
+      <View style={styles.nodeOrder}>
+        <Text style={styles.nodeOrderText}>0{territory.order}</Text>
+      </View>
+      <Text style={[styles.nodeIcon, state === 'locked' && styles.nodeIconLocked]}>
+        {state === 'locked' ? '◆' : territory.icon}
+      </Text>
+      <Text style={styles.nodeName}>{territory.name}</Text>
+      <Text style={styles.nodeState}>{stateLabel}</Text>
+      {state === 'patrol' && (
+        <View style={styles.alertBadge}>
+          <Text style={styles.alertBadgeText}>!</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
-  const { hydrated, territoryLevel, reviewQueue } = useGameStore();
-  const occupied = territoryLevel > 0;
-  const patrolDue = occupied && reviewQueue.length > 0;
-  if (!hydrated)
+  const { hydrated, territoryLevels, reviewQueues } = useGameStore();
+  if (!hydrated) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.gold} />
       </View>
     );
+  }
+
+  const progress = { territoryLevels, reviewQueues };
+  const states = Object.fromEntries(
+    territories.map((territory) => {
+      const occupied = territoryLevels[territory.id] > 0;
+      const patrolDue = occupied && reviewQueues[territory.id].length > 0;
+      const state: NodeState = patrolDue
+        ? 'patrol'
+        : occupied
+          ? 'occupied'
+          : isTerritoryUnlocked(progress, territory.id)
+            ? 'available'
+            : 'locked';
+      return [territory.id, state];
+    }),
+  ) as Record<TerritoryId, NodeState>;
+
+  const occupiedCount = territories.filter((territory) => territoryLevels[territory.id] > 0).length;
+  const patrolTarget = territories.find((territory) => reviewQueues[territory.id].length > 0);
+  const conquestTarget = territories.find(
+    (territory) =>
+      territoryLevels[territory.id] === 0 && isTerritoryUnlocked(progress, territory.id),
+  );
+  const commandTarget = patrolTarget ?? conquestTarget ?? territories[territories.length - 1];
+  const totalReview = territories.reduce(
+    (total, territory) => total + reviewQueues[territory.id].length,
+    0,
+  );
+  const campaignComplete = occupiedCount === territories.length;
 
   return (
     <Screen style={styles.screen}>
@@ -36,33 +118,37 @@ export default function HomeScreen() {
           <Text style={styles.hudTitle}>晨望主城</Text>
         </View>
         <View style={styles.level}>
-          <Text style={styles.levelTop}>階級</Text>
-          <Text style={styles.levelValue}>01</Text>
+          <Text style={styles.levelTop}>領地</Text>
+          <Text style={styles.levelValue}>{occupiedCount}/3</Text>
         </View>
       </View>
 
       <View style={styles.chapterBar}>
         <View>
           <Text style={styles.chapterLabel}>第一章</Text>
-          <Text style={styles.chapterName}>初次揚旗</Text>
+          <Text style={styles.chapterName}>通往天空的語言遠征</Text>
         </View>
-        <Text style={styles.chapterCount}>{occupied ? '1 / 1' : '0 / 1'}</Text>
+        <Text style={styles.chapterCount}>{occupiedCount} / 3</Text>
       </View>
 
       <View style={styles.map}>
         <View style={styles.mapGlow} />
         <View style={styles.river} />
-        <View style={[styles.road, styles.roadOne]} />
-        <View style={[styles.road, styles.roadTwo]} />
-        <View style={[styles.road, styles.roadThree]} />
         <TerrainTile style={styles.forestWest} icon="♠" label="西側松林" />
-        <TerrainTile style={styles.ridgeEast} icon="▲" label="灰岩山脊" />
-        <TerrainTile style={styles.farmSouth} icon="≋" label="南方平原" />
+        <TerrainTile style={styles.ridgeEast} icon="▲" label="北境高地" />
+        <TerrainTile style={styles.farmSouth} icon="≋" label="河谷平原" />
 
         <View style={styles.compass}>
           <Text style={styles.compassText}>N</Text>
           <View style={styles.compassNeedle} />
         </View>
+
+        <View style={styles.routeCitySchool} />
+        <View style={styles.routeSchoolRestaurant} />
+        <View style={styles.routeRestaurantAirport} />
+        <Text style={[styles.routeArrow, styles.arrowOne]}>› › ›</Text>
+        <Text style={[styles.routeArrow, styles.arrowTwo]}>› › ›</Text>
+        <Text style={[styles.routeArrow, styles.arrowThree]}>› › ›</Text>
 
         <View style={styles.castleWrap}>
           <View style={styles.castleHalo} />
@@ -71,43 +157,38 @@ export default function HomeScreen() {
           <Text style={styles.castleSub}>主城 · 安全</Text>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="學校領地"
-          onPress={() => router.push('/territory')}
-          style={({ pressed }) => [
-            styles.schoolNode,
-            patrolDue
-              ? styles.schoolPatrolDue
-              : occupied
-                ? styles.schoolOccupied
-                : styles.schoolAvailable,
-            pressed && styles.nodePressed,
-          ]}
-        >
-          <View style={styles.nodeFlag}>
-            <Text style={styles.nodeFlagText}>{patrolDue ? '!' : occupied ? '◆' : '!'}</Text>
-          </View>
-          <Text style={styles.schoolIcon}>⌂</Text>
-          <Text style={styles.schoolName}>學校</Text>
-          <Text style={styles.schoolState}>
-            {patrolDue ? '待巡邏' : occupied ? '已駐守' : '可進攻'}
-          </Text>
-        </Pressable>
+        {territories.map((territory) => (
+          <TerritoryNode key={territory.id} state={states[territory.id]} territory={territory} />
+        ))}
 
-        <View style={styles.marchLine}>
-          <Text style={styles.marchArrow}>› › ›</Text>
-        </View>
-        <View style={styles.fogNode}>
-          <Text style={styles.fogIcon}>?</Text>
-          <Text style={styles.fogText}>迷霧</Text>
-        </View>
         <View style={styles.mapLegend}>
-          <View style={styles.legendDot} />
+          <View style={[styles.legendDot, totalReview > 0 && styles.legendAlert]} />
           <Text style={styles.legendText}>
-            {patrolDue ? '有複習巡邏待完成' : occupied ? '領地已穩固' : '點選學校查看戰情'}
+            {totalReview > 0
+              ? `全境有 ${totalReview} 題待巡邏`
+              : campaignComplete
+                ? '三領地皆已插旗'
+                : '沿金色路線逐步解鎖領地'}
           </Text>
         </View>
+      </View>
+
+      <View style={styles.progressStrip}>
+        {territories.map((territory, index) => (
+          <View key={territory.id} style={styles.progressStep}>
+            <View
+              style={[
+                styles.progressMark,
+                states[territory.id] === 'occupied' && styles.progressDone,
+                states[territory.id] === 'patrol' && styles.progressPatrol,
+                states[territory.id] === 'available' && styles.progressActive,
+              ]}
+            >
+              <Text style={styles.progressMarkText}>{index + 1}</Text>
+            </View>
+            <Text style={styles.progressLabel}>{territory.name}</Text>
+          </View>
+        ))}
       </View>
 
       <View style={styles.commandPanel}>
@@ -115,37 +196,41 @@ export default function HomeScreen() {
           <View
             style={[
               styles.statusSigil,
-              occupied && styles.statusSigilOccupied,
-              patrolDue && styles.statusSigilPatrolDue,
+              campaignComplete && styles.statusSigilOccupied,
+              patrolTarget && styles.statusSigilPatrolDue,
             ]}
           >
-            <Text style={styles.statusSigilText}>{patrolDue ? '!' : occupied ? '✓' : '⚔'}</Text>
+            <Text style={styles.statusSigilText}>
+              {patrolTarget ? '!' : campaignComplete ? '✓' : '⚔'}
+            </Text>
           </View>
           <View style={styles.commandCopy}>
             <Text style={styles.commandKicker}>
-              {patrolDue ? '巡邏命令' : occupied ? '駐軍戰報' : '目前作戰命令'}
+              {patrolTarget ? '優先巡邏命令' : campaignComplete ? '遠征完成' : '下一個作戰命令'}
             </Text>
-            <Text style={styles.commandTitle}>學校 · 第一領地</Text>
+            <Text style={styles.commandTitle}>
+              {commandTarget.name} · {commandTarget.chapter}
+            </Text>
             <Text style={styles.commandBody}>
-              {occupied
-                ? reviewQueue.length
-                  ? `尚有 ${reviewQueue.length} 題待巡邏複習。重新答對即可清除。`
-                  : '領地安全，沒有待完成的複習巡邏。'
-                : '完成三題英文挑戰並答對至少兩題，即可占領學校。'}
+              {patrolTarget
+                ? `${commandTarget.name}尚有 ${reviewQueues[commandTarget.id].length} 題待複習。`
+                : campaignComplete
+                  ? '學校、餐廳與機場皆已穩固；可返回各領地查看駐軍與巡邏簿。'
+                  : `${commandTarget.scenario}：${commandTarget.conquestBrief}`}
             </Text>
           </View>
         </View>
         <PrimaryButton
-          label={patrolDue ? '前往巡邏' : occupied ? '查看駐軍' : '進軍學校'}
-          tone={patrolDue || !occupied ? 'red' : 'gold'}
-          onPress={() => router.push('/territory')}
+          label={patrolTarget ? `前往${commandTarget.name}巡邏` : `查看${commandTarget.name}戰情`}
+          tone={patrolTarget || !campaignComplete ? 'red' : 'gold'}
+          onPress={() => router.push({ pathname: '/territory', params: { id: commandTarget.id } })}
         />
       </View>
 
       <View style={styles.helpPanel}>
-        <Text style={styles.helpTitle}>新手作戰指南</Text>
+        <Text style={styles.helpTitle}>遠征作戰指南</Text>
         <Text style={styles.helpText}>
-          1. 點選學校查看規則　2. 完成三題英文題目　3. 占領後重做錯題完成巡邏
+          1. 占領學校解鎖餐廳　2. 占領餐廳解鎖機場　3. 各領地錯題分開巡邏複習
         </Text>
       </View>
     </Screen>
@@ -177,7 +262,7 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.gold, fontSize: 10, fontWeight: '900', letterSpacing: 1.8 },
   hudTitle: { color: colors.ink, fontSize: 20, fontWeight: '900' },
   level: {
-    width: 48,
+    width: 52,
     height: 48,
     borderWidth: 1,
     borderColor: colors.goldDark,
@@ -186,7 +271,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   levelTop: { color: colors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  levelValue: { color: colors.gold, fontSize: 19, fontWeight: '900' },
+  levelValue: { color: colors.gold, fontSize: 17, fontWeight: '900' },
   chapterBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,7 +284,7 @@ const styles = StyleSheet.create({
   chapterName: { color: colors.ink, fontSize: 16, fontWeight: '800' },
   chapterCount: { color: colors.gold, fontWeight: '900', fontSize: 16 },
   map: {
-    height: 438,
+    height: 535,
     borderWidth: 1,
     borderColor: '#6F725D',
     backgroundColor: colors.terrain,
@@ -221,45 +306,32 @@ const styles = StyleSheet.create({
   },
   river: {
     position: 'absolute',
-    width: 75,
-    height: 580,
+    width: 58,
+    height: 700,
     backgroundColor: colors.water,
-    opacity: 0.8,
-    transform: [{ rotate: '23deg' }],
-    left: -30,
-    top: -65,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderColor: 'rgba(177,198,176,0.16)',
+    opacity: 0.82,
+    transform: [{ rotate: '18deg' }],
+    left: 70,
+    top: -80,
+    borderLeftWidth: 7,
+    borderRightWidth: 7,
+    borderColor: 'rgba(177,198,176,0.14)',
   },
-  road: {
-    position: 'absolute',
-    height: 5,
-    backgroundColor: '#A18B60',
-    opacity: 0.72,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#CFB77C',
-  },
-  roadOne: { width: 130, top: 238, left: 155, transform: [{ rotate: '-14deg' }] },
-  roadTwo: { width: 110, top: 202, left: 78, transform: [{ rotate: '44deg' }] },
-  roadThree: { width: 105, top: 166, right: 35, transform: [{ rotate: '-51deg' }] },
   terrainTile: {
     position: 'absolute',
-    width: 104,
-    height: 70,
+    width: 96,
+    height: 62,
     borderWidth: 1,
-    borderColor: 'rgba(235,220,170,0.22)',
-    backgroundColor: 'rgba(35,55,40,0.50)',
+    borderColor: 'rgba(235,220,170,0.20)',
+    backgroundColor: 'rgba(35,55,40,0.46)',
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ rotate: '-3deg' }],
   },
-  forestWest: { left: 28, top: 61 },
-  ridgeEast: { right: 20, top: 58 },
-  farmSouth: { left: 35, bottom: 34 },
-  terrainIcon: { color: '#91A878', fontSize: 25, fontWeight: '900' },
-  terrainLabel: { color: '#C4C8AE', fontSize: 8, fontWeight: '800', letterSpacing: 1 },
+  forestWest: { left: 9, top: 42, transform: [{ rotate: '-3deg' }] },
+  ridgeEast: { right: 8, top: 8, transform: [{ rotate: '3deg' }] },
+  farmSouth: { left: 17, bottom: 136, transform: [{ rotate: '-2deg' }] },
+  terrainIcon: { color: '#91A878', fontSize: 23, fontWeight: '900' },
+  terrainLabel: { color: '#C4C8AE', fontSize: 7, fontWeight: '800', letterSpacing: 0.8 },
   compass: {
     position: 'absolute',
     top: 14,
@@ -280,47 +352,69 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red,
     top: 2,
   },
-  castleWrap: {
-    position: 'absolute',
-    width: 150,
-    alignItems: 'center',
-    left: '50%',
-    marginLeft: -75,
-    top: 122,
-  },
+  castleWrap: { position: 'absolute', width: 108, alignItems: 'center', left: 24, bottom: 38 },
   castleHalo: {
     position: 'absolute',
-    top: 4,
-    width: 86,
-    height: 86,
+    top: 2,
+    width: 75,
+    height: 75,
     borderRadius: 50,
     borderWidth: 1,
     borderColor: 'rgba(233,197,112,0.55)',
     backgroundColor: 'rgba(23,37,34,0.58)',
   },
-  castleIcon: {
-    color: '#E7C97F',
-    fontSize: 72,
-    lineHeight: 78,
-    textShadowColor: '#19231D',
-    textShadowRadius: 8,
-  },
+  castleIcon: { color: '#E7C97F', fontSize: 62, lineHeight: 67, textShadowRadius: 8 },
   castleTitle: {
     color: '#FFF0C5',
     backgroundColor: 'rgba(20,27,25,0.9)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 3,
     fontWeight: '900',
-    letterSpacing: 1.5,
-    fontSize: 11,
+    letterSpacing: 1.2,
+    fontSize: 10,
   },
-  castleSub: { color: '#BFC6AA', fontSize: 8, marginTop: 3, letterSpacing: 1.2, fontWeight: '800' },
-  schoolNode: {
+  castleSub: { color: '#BFC6AA', fontSize: 7, marginTop: 3, letterSpacing: 1, fontWeight: '800' },
+  routeCitySchool: {
     position: 'absolute',
-    right: 25,
-    bottom: 58,
-    width: 130,
-    minHeight: 104,
+    left: 104,
+    bottom: 94,
+    width: 155,
+    height: 5,
+    backgroundColor: '#C8A65E',
+    transform: [{ rotate: '-12deg' }],
+  },
+  routeSchoolRestaurant: {
+    position: 'absolute',
+    left: 113,
+    bottom: 220,
+    width: 182,
+    height: 5,
+    backgroundColor: '#C8A65E',
+    transform: [{ rotate: '47deg' }],
+  },
+  routeRestaurantAirport: {
+    position: 'absolute',
+    left: 105,
+    top: 182,
+    width: 188,
+    height: 5,
+    backgroundColor: '#C8A65E',
+    transform: [{ rotate: '-32deg' }],
+  },
+  routeArrow: {
+    position: 'absolute',
+    color: '#F3CE78',
+    fontWeight: '900',
+    fontSize: 16,
+    letterSpacing: 1,
+  },
+  arrowOne: { left: 145, bottom: 96, transform: [{ rotate: '-12deg' }] },
+  arrowTwo: { left: 188, bottom: 220, transform: [{ rotate: '47deg' }] },
+  arrowThree: { left: 173, top: 178, transform: [{ rotate: '-32deg' }] },
+  territoryNode: {
+    position: 'absolute',
+    width: 112,
+    height: 90,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -329,53 +423,49 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 7,
   },
-  schoolAvailable: { backgroundColor: '#70362C', borderColor: '#E79B71' },
-  schoolOccupied: { backgroundColor: '#315E46', borderColor: '#8DC18A' },
-  schoolPatrolDue: { backgroundColor: '#725227', borderColor: '#E7BC67' },
+  schoolNode: { right: 18, bottom: 46 },
+  restaurantNode: { left: 17, top: 218 },
+  airportNode: { right: 19, top: 82 },
+  nodeLocked: { backgroundColor: '#303B3B', borderColor: '#66706D', opacity: 0.88 },
+  nodeAvailable: { backgroundColor: '#70362C', borderColor: '#E79B71' },
+  nodeOccupied: { backgroundColor: '#315E46', borderColor: '#8DC18A' },
+  nodePatrol: { backgroundColor: '#725227', borderColor: '#E7BC67' },
   nodePressed: { transform: [{ scale: 0.97 }] },
-  nodeFlag: {
+  nodeOrder: {
     position: 'absolute',
-    right: -10,
-    top: -13,
+    left: -8,
+    top: -9,
     width: 29,
-    height: 34,
+    height: 25,
+    backgroundColor: '#182426',
+    borderWidth: 1,
+    borderColor: colors.goldDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nodeOrderText: { color: colors.gold, fontWeight: '900', fontSize: 9 },
+  nodeIcon: { color: '#FFE8B5', fontSize: 30, fontWeight: '900', lineHeight: 34 },
+  nodeIconLocked: { color: '#7F8985', fontSize: 23 },
+  nodeName: { color: '#FFF2D0', fontWeight: '900', letterSpacing: 1.1, fontSize: 13 },
+  nodeState: { color: '#F2CE91', fontSize: 8, fontWeight: '900', letterSpacing: 1.1, marginTop: 2 },
+  alertBadge: {
+    position: 'absolute',
+    right: -9,
+    top: -11,
+    width: 27,
+    height: 27,
+    borderRadius: 15,
     backgroundColor: colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
   },
-  nodeFlagText: { color: '#252015', fontWeight: '900', fontSize: 16 },
-  schoolIcon: { color: '#FFE8B5', fontSize: 35, fontWeight: '900' },
-  schoolName: { color: '#FFF2D0', fontWeight: '900', letterSpacing: 1.2, fontSize: 13 },
-  schoolState: {
-    color: '#F2CE91',
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.3,
-    marginTop: 3,
-  },
-  marchLine: { position: 'absolute', right: 138, bottom: 109, transform: [{ rotate: '16deg' }] },
-  marchArrow: { color: '#F3CE78', fontWeight: '900', fontSize: 18, letterSpacing: 1 },
-  fogNode: {
-    position: 'absolute',
-    right: 34,
-    top: 111,
-    width: 72,
-    height: 65,
-    borderWidth: 1,
-    borderColor: '#626B68',
-    backgroundColor: 'rgba(37,47,48,0.75)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fogIcon: { color: '#87908C', fontSize: 25, fontWeight: '900' },
-  fogText: { color: '#87908C', fontSize: 8, fontWeight: '900', letterSpacing: 1.5 },
+  alertBadgeText: { color: '#252015', fontWeight: '900', fontSize: 15 },
   mapLegend: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
-    backgroundColor: 'rgba(18,27,27,0.84)',
+    bottom: 9,
+    left: 142,
+    right: 9,
+    backgroundColor: 'rgba(18,27,27,0.88)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
@@ -383,7 +473,31 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   legendDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.gold },
-  legendText: { color: '#D6D1BC', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  legendAlert: { backgroundColor: '#E7BC67' },
+  legendText: { color: '#D6D1BC', fontSize: 9, fontWeight: '800', letterSpacing: 0.3 },
+  progressStrip: {
+    flexDirection: 'row',
+    backgroundColor: '#182326',
+    borderWidth: 1,
+    borderColor: '#4D554D',
+    padding: 11,
+  },
+  progressStep: { flex: 1, alignItems: 'center', gap: 4 },
+  progressMark: {
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#59615D',
+    backgroundColor: '#303A3A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressDone: { backgroundColor: colors.greenDark, borderColor: '#82A878' },
+  progressPatrol: { backgroundColor: colors.goldDark, borderColor: '#E7BC67' },
+  progressActive: { backgroundColor: colors.redDark, borderColor: '#C87961' },
+  progressMarkText: { color: '#FFEAB8', fontSize: 10, fontWeight: '900' },
+  progressLabel: { color: colors.muted, fontSize: 9, fontWeight: '800' },
   commandPanel: {
     backgroundColor: '#182326',
     borderWidth: 1,
@@ -409,12 +523,7 @@ const styles = StyleSheet.create({
   commandKicker: { color: colors.gold, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
   commandTitle: { color: colors.ink, fontSize: 19, fontWeight: '900', marginTop: 2 },
   commandBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 4 },
-  helpPanel: {
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
-    paddingTop: 13,
-    gap: 4,
-  },
+  helpPanel: { borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 13, gap: 4 },
   helpTitle: { color: colors.gold, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
   helpText: { color: colors.muted, fontSize: 12, lineHeight: 19 },
 });
