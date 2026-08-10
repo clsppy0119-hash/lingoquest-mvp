@@ -22,12 +22,12 @@ export default function ChallengeScreen() {
       <View style={styles.battleHeader}>
         <View>
           <Text style={styles.kicker}>
-            {mode === 'conquest' ? 'SCHOOL FRONT · ATTACK' : 'SCHOOL FRONT · PATROL'}
+            {mode === 'conquest' ? '學校前線 · 進攻' : '學校前線 · 巡邏'}
           </Text>
-          <Text style={styles.title}>Issue Your Order</Text>
+          <Text style={styles.title}>下達作答指令</Text>
         </View>
         <View style={styles.round}>
-          <Text style={styles.roundTop}>ORDER</Text>
+          <Text style={styles.roundTop}>題次</Text>
           <Text style={styles.roundValue}>
             {index + 1}/{questionIds.length}
           </Text>
@@ -36,7 +36,7 @@ export default function ChallengeScreen() {
       <View style={styles.frontLine}>
         <View style={styles.capital}>
           <Text style={styles.unitIcon}>♜</Text>
-          <Text style={styles.unitName}>YOUR BANNER</Text>
+          <Text style={styles.unitName}>我方部隊</Text>
         </View>
         <View style={styles.clash}>
           <View style={[styles.track, { width: `${((index + 1) / questionIds.length) * 100}%` }]} />
@@ -44,11 +44,12 @@ export default function ChallengeScreen() {
         </View>
         <View style={styles.enemy}>
           <Text style={styles.unitIcon}>⌂</Text>
-          <Text style={styles.unitName}>SCHOOL</Text>
+          <Text style={styles.unitName}>學校守軍</Text>
         </View>
       </View>
       <View style={styles.orderPanel}>
-        <Text style={styles.orderLabel}>TACTICAL ENGLISH ORDER</Text>
+        <Text style={styles.orderLabel}>英文作戰題</Text>
+        <Text style={styles.guide}>{question.guide}</Text>
         <Text style={styles.prompt}>{question.prompt}</Text>
         <View style={styles.choices}>
           {question.choices.map((choice, choiceIndex) => (
@@ -65,7 +66,7 @@ export default function ChallengeScreen() {
           ))}
         </View>
       </View>
-      <Text style={styles.hint}>Select the command that advances your company.</Text>
+      <Text style={styles.hint}>點選一個英文答案。作答結果與中文解析會在戰役結果中顯示。</Text>
     </Screen>
   );
 }
@@ -124,6 +125,7 @@ const styles = StyleSheet.create({
     gap: 17,
   },
   orderLabel: { color: colors.gold, fontSize: 9, fontWeight: '900', letterSpacing: 1.7 },
+  guide: { color: colors.muted, fontSize: 14, lineHeight: 21 },
   prompt: { color: colors.ink, fontSize: 25, lineHeight: 33, fontWeight: '900' },
   choices: { gap: 10 },
   choice: {

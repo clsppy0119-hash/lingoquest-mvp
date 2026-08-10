@@ -24,29 +24,29 @@ export default function ResultScreen() {
   return (
     <Screen>
       <View style={[styles.victory, !passed && styles.defeat]}>
-        <Text style={styles.victoryKicker}>{passed ? 'CAMPAIGN VICTORY' : 'ORDER TO REGROUP'}</Text>
+        <Text style={styles.victoryKicker}>{passed ? '戰役勝利' : '整隊再戰'}</Text>
         <Text style={styles.sigil}>{passed ? '◆' : '◇'}</Text>
         <Text style={styles.title}>
-          {passed ? (mode === 'conquest' ? 'Banner Raised' : 'Patrol Complete') : 'Hold the Line'}
+          {passed ? (mode === 'conquest' ? '成功插旗' : '巡邏完成') : '防線未破'}
         </Text>
         <Text style={styles.subtitle}>
           {passed
             ? mode === 'conquest'
-              ? 'SCHOOL DISTRICT · OCCUPIED'
-              : 'REVIEW ROUTE · SECURED'
-            : 'MISSED ORDERS ENTERED IN PATROL LEDGER'}
+              ? '學校領地 · 已占領'
+              : '複習路線 · 已穩固'
+            : '錯題已記入巡邏簿'}
         </Text>
       </View>
       <View style={styles.scorePanel}>
-        <Text style={styles.scoreLabel}>BATTLE EFFICIENCY</Text>
+        <Text style={styles.scoreLabel}>作答戰績</Text>
         <Text style={styles.score}>
           {correctCount}
           <Text style={styles.scoreSmall}> / {attempts.length}</Text>
         </Text>
         <Text style={styles.scoreCopy}>
           {incorrectIds.length
-            ? `${incorrectIds.length} missed order${incorrectIds.length === 1 ? '' : 's'} entered in the patrol ledger.`
-            : 'The company carried out every order.'}
+            ? `有 ${incorrectIds.length} 題答錯，已加入巡邏複習。請查看下方中文解析。`
+            : '全部答對！本次沒有新增複習題目。'}
         </Text>
       </View>
       <View style={styles.report}>
@@ -58,7 +58,7 @@ export default function ResultScreen() {
                 <Text style={styles.markText}>{attempt.correct ? '✓' : '×'}</Text>
               </View>
               <View style={styles.rowBody}>
-                <Text style={styles.rowKicker}>ORDER {index + 1}</Text>
+                <Text style={styles.rowKicker}>第 {index + 1} 題</Text>
                 <Text style={styles.rowTitle}>{attempt.selected}</Text>
                 {!attempt.correct && <Text style={styles.tip}>{question?.tip}</Text>}
               </View>
@@ -68,7 +68,7 @@ export default function ResultScreen() {
       </View>
       <PrimaryButton
         disabled={!saved}
-        label={saved ? 'RETURN TO CAPITAL' : 'RECORDING CAMPAIGN…'}
+        label={saved ? '返回主城' : '正在保存戰役結果…'}
         onPress={done}
       />
     </Screen>
