@@ -19,6 +19,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="placement" options={{ title: '英文能力偵察', gestureEnabled: false }} />
         <Stack.Screen name="territory" options={{ title: '領地戰情' }} />
         <Stack.Screen name="challenge" options={{ title: '英文挑戰', gestureEnabled: false }} />
         <Stack.Screen

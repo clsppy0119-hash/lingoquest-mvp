@@ -123,6 +123,22 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      <View style={styles.placementCard}>
+        <View style={styles.placementTop}>
+          <View style={styles.placementSigil}>
+            <Text style={styles.placementSigilText}>⌖</Text>
+          </View>
+          <View style={styles.placementCopy}>
+            <Text style={styles.placementKicker}>新手英文能力偵察</Text>
+            <Text style={styles.placementTitle}>先確認起點，再安排下一個學習任務</Text>
+            <Text style={styles.placementBody}>
+              約 6–10 分鐘、12–14 個短情境；結果會說明你能獨立完成、需要提示或應先練的內容。
+            </Text>
+          </View>
+        </View>
+        <PrimaryButton label="開始能力偵察" onPress={() => router.push('/placement')} />
+      </View>
+
       <View style={styles.chapterBar}>
         <View>
           <Text style={styles.chapterLabel}>第一章</Text>
@@ -272,6 +288,28 @@ const styles = StyleSheet.create({
   },
   levelTop: { color: colors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   levelValue: { color: colors.gold, fontSize: 17, fontWeight: '900' },
+  placementCard: {
+    backgroundColor: '#1B2A29',
+    borderWidth: 1,
+    borderColor: '#587066',
+    padding: 15,
+    gap: 13,
+  },
+  placementTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  placementSigil: {
+    width: 48,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2E372B',
+  },
+  placementSigilText: { color: colors.gold, fontSize: 27, fontWeight: '900' },
+  placementCopy: { flex: 1, gap: 3 },
+  placementKicker: { color: colors.gold, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
+  placementTitle: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '900' },
+  placementBody: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   chapterBar: {
     flexDirection: 'row',
     alignItems: 'center',
