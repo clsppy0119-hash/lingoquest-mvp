@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "LingoQuest",
+    "slug": "lingoquest-mvp",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "lingoquest",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router"],
+    "web": { "bundler": "metro" }
+  }
+}
