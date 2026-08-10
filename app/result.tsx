@@ -6,5 +6,31 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { questionById } from '@/data/questions';
 import { useGameStore } from '@/store/game';
 import { colors } from '@/theme';
-export default function ResultScreen() { const { mode, attempts, commitResult, resetSession } = useGameStore(); const [saved, setSaved] = useState(false); useEffect(() => { if (mode && attempts.length) void commitResult().then(() => setSaved(true)); }, [attempts.length, commitResult, mode]); if (!mode || !attempts.length) return <Redirect href="/" />; const correct = attempts.filter((a) => a.correct).length; const passed = mode === 'patrol' ? correct === attempts.length : correct >= 2; const done = () => { resetSession(); router.replace('/'); }; return <Screen><Text style={styles.icon}>{passed ? '🏆' : '🛡️'}</Text><Text style={styles.title}>{passed ? (mode === 'conquest' ? 'School occupied!' : 'Patrol complete!') : 'Try again'}</Text><Text style={styles.score}>{correct} / {attempts.length} correct</Text><Text style={styles.copy}>{passed ? (mode === 'conquest' ? 'Your banner now flies over School Lv.1.' : 'Correct answers were removed from your review queue.') : 'Missed questions have been added to patrol review.'}</Text><View style={styles.report}>{attempts.map((attempt) => { const question = questionById(attempt.questionId); return <View key={attempt.questionId} style={styles.row}><Text style={styles.mark}>{attempt.correct ? '✓' : '×'}</Text><View style={styles.rowBody}><Text style={styles.rowTitle}>{attempt.selected}</Text>{!attempt.correct && <Text style={styles.tip}>{question?.tip}</Text>}</View></View>; })}</View><PrimaryButton disabled={!saved} label={saved ? 'Return to city' : 'Saving progress…'} onPress={done} /></Screen>; }
-const styles = StyleSheet.create({ icon: { fontSize: 64, textAlign: 'center' }, title: { color: colors.ink, fontSize: 32, fontWeight: '900', textAlign: 'center' }, score: { color: colors.blue, fontSize: 22, fontWeight: '900', textAlign: 'center' }, copy: { color: colors.muted, fontSize: 16, lineHeight: 24, textAlign: 'center' }, report: { gap: 10 }, row: { flexDirection: 'row', gap: 12, backgroundColor: colors.card, padding: 15, borderRadius: 14, borderWidth: 1, borderColor: colors.line }, mark: { fontSize: 22, fontWeight: '900', color: colors.green }, rowBody: { flex: 1, gap: 4 }, rowTitle: { color: colors.ink, fontWeight: '800' }, tip: { color: colors.red, lineHeight: 20 } });
+
+export default function ResultScreen() {
+  const { mode, attempts, commitResult, resetSession } = useGameStore();
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { if (mode && attempts.length) void commitResult().then(() => setSaved(true)); }, [attempts.length, commitResult, mode]);
+  if (!mode || !attempts.length) return <Redirect href="/" />;
+  const correct = attempts.filter((a) => a.correct).length;
+  const passed = mode === 'patrol' ? correct === attempts.length : correct >= 2;
+  const done = () => { resetSession(); router.replace('/'); };
+
+  return <Screen>
+    <View style={[styles.victory, !passed && styles.defeat]}>
+      <Text style={styles.victoryKicker}>{passed ? 'CAMPAIGN VICTORY' : 'ORDER TO REGROUP'}</Text>
+      <Text style={styles.sigil}>{passed ? '◆' : '◇'}</Text>
+      <Text style={styles.title}>{passed ? (mode === 'conquest' ? 'Banner Raised' : 'Patrol Complete') : 'Hold the Line'}</Text>
+      <Text style={styles.subtitle}>{passed ? (mode === 'conquest' ? 'SCHOOL DISTRICT · OCCUPIED' : 'REVIEW ROUTE · SECURED') : 'MISSED ORDERS ENTERED IN PATROL LEDGER'}</Text>
+    </View>
+    <View style={styles.scorePanel}><Text style={styles.scoreLabel}>BATTLE EFFICIENCY</Text><Text style={styles.score}>{correct}<Text style={styles.scoreSmall}> / {attempts.length}</Text></Text><Text style={styles.scoreCopy}>{passed ? 'The company carried out its orders.' : 'Review the marked orders before the next march.'}</Text></View>
+    <View style={styles.report}>{attempts.map((attempt, index) => { const question = questionById(attempt.questionId); return <View key={attempt.questionId} style={styles.row}><View style={[styles.mark, !attempt.correct && styles.markWrong]}><Text style={styles.markText}>{attempt.correct ? '✓' : '×'}</Text></View><View style={styles.rowBody}><Text style={styles.rowKicker}>ORDER {index + 1}</Text><Text style={styles.rowTitle}>{attempt.selected}</Text>{!attempt.correct && <Text style={styles.tip}>{question?.tip}</Text>}</View></View>; })}</View>
+    <PrimaryButton disabled={!saved} label={saved ? 'RETURN TO CAPITAL' : 'RECORDING CAMPAIGN…'} onPress={done} />
+  </Screen>;
+}
+
+const styles = StyleSheet.create({
+  victory: { alignItems: 'center', borderWidth: 1, borderColor: '#A68445', backgroundColor: '#344A39', padding: 22, gap: 5 }, defeat: { backgroundColor: '#4D302C', borderColor: '#925044' }, victoryKicker: { color: colors.gold, fontSize: 9, fontWeight: '900', letterSpacing: 2.2 }, sigil: { color: '#F0CE77', fontSize: 42, lineHeight: 45 }, title: { color: '#FFF0C9', fontSize: 31, fontWeight: '900' }, subtitle: { color: '#D5C9A8', fontSize: 8, fontWeight: '900', letterSpacing: 1.4, textAlign: 'center' },
+  scorePanel: { alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, padding: 15 }, scoreLabel: { color: colors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1.5 }, score: { color: colors.gold, fontSize: 48, lineHeight: 53, fontWeight: '900' }, scoreSmall: { color: colors.muted, fontSize: 22 }, scoreCopy: { color: colors.muted, fontSize: 12, textAlign: 'center' },
+  report: { gap: 9 }, row: { flexDirection: 'row', gap: 12, backgroundColor: colors.card, padding: 13, borderWidth: 1, borderColor: colors.line }, mark: { width: 38, height: 38, borderRadius: 20, backgroundColor: colors.greenDark, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#729778' }, markWrong: { backgroundColor: colors.redDark, borderColor: '#B46B5A' }, markText: { color: '#FFE9B7', fontSize: 20, fontWeight: '900' }, rowBody: { flex: 1, gap: 3 }, rowKicker: { color: colors.gold, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 }, rowTitle: { color: colors.ink, fontWeight: '800' }, tip: { color: '#E28D76', lineHeight: 19, fontSize: 12 },
+});

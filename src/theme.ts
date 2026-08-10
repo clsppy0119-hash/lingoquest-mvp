@@ -1,1 +1,19 @@
-export const colors = { ink: '#1E293B', muted: '#64748B', paper: '#F7F4EA', card: '#FFFFFF', blue: '#2864DC', blueDark: '#1949A3', gold: '#F3B61F', green: '#168B62', red: '#C43C45', line: '#D9E0EA' };
+export const colors = {
+  ink: '#F5E7C6',
+  muted: '#B9B29F',
+  paper: '#111A1E',
+  card: '#1C292B',
+  blue: '#557E78',
+  blueDark: '#31534F',
+  gold: '#D9A441',
+  goldDark: '#805B20',
+  green: '#5F8F64',
+  greenDark: '#2F5B42',
+  red: '#B84D3C',
+  redDark: '#702E28',
+  line: '#4A5149',
+  terrain: '#3F5C46',
+  terrainLight: '#617452',
+  water: '#294B55',
+  fog: '#303A3A',
+};
