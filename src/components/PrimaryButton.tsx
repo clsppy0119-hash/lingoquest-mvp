@@ -1,4 +1,60 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme';
-export function PrimaryButton({ label, onPress, disabled = false, tone = 'gold' }: { label: string; onPress: () => void; disabled?: boolean; tone?: 'gold' | 'red' }) { return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, tone === 'red' && styles.red, disabled && styles.disabled, pressed && styles.pressed]}><View style={styles.shine} /><Text style={styles.label}>{label}</Text><Text style={styles.chevron}>›</Text></Pressable>; }
-const styles = StyleSheet.create({ button: { minHeight: 58, backgroundColor: colors.gold, borderRadius: 7, borderWidth: 1, borderColor: '#F2D183', borderBottomWidth: 4, borderBottomColor: colors.goldDark, paddingHorizontal: 18, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }, red: { backgroundColor: colors.red, borderColor: '#DB8B72', borderBottomColor: colors.redDark }, disabled: { opacity: 0.38 }, pressed: { transform: [{ translateY: 2 }], borderBottomWidth: 2 }, shine: { position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: 'rgba(255,255,255,0.45)' }, label: { color: '#171812', fontSize: 16, fontWeight: '900', letterSpacing: 0.8 }, chevron: { position: 'absolute', right: 18, color: '#171812', fontSize: 30, lineHeight: 30 } });
+export function PrimaryButton({
+  label,
+  onPress,
+  disabled = false,
+  tone = 'gold',
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  tone?: 'gold' | 'red';
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        tone === 'red' && styles.red,
+        disabled && styles.disabled,
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={styles.shine} />
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
+  );
+}
+const styles = StyleSheet.create({
+  button: {
+    minHeight: 58,
+    backgroundColor: colors.gold,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#F2D183',
+    borderBottomWidth: 4,
+    borderBottomColor: colors.goldDark,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  red: { backgroundColor: colors.red, borderColor: '#DB8B72', borderBottomColor: colors.redDark },
+  disabled: { opacity: 0.38 },
+  pressed: { transform: [{ translateY: 2 }], borderBottomWidth: 2 },
+  shine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  label: { color: '#171812', fontSize: 16, fontWeight: '900', letterSpacing: 0.8 },
+  chevron: { position: 'absolute', right: 18, color: '#171812', fontSize: 30, lineHeight: 30 },
+});
