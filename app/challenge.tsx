@@ -2,16 +2,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { questionById } from '@/data/questions';
+import { territoryById } from '@/data/territories';
 import { useGameStore } from '@/store/game';
 import { colors } from '@/theme';
 
 export default function ChallengeScreen() {
-  const { mode, questionIds, attempts, answer } = useGameStore();
-  if (!mode || !questionIds.length) return <Redirect href="/territory" />;
+  const { activeTerritoryId, mode, questionIds, attempts, answer } = useGameStore();
+  const territory = territoryById(activeTerritoryId);
+  if (!territory || !mode || !questionIds.length) return <Redirect href="/" />;
   const index = attempts.length;
   if (index >= questionIds.length) return <Redirect href="/result" />;
   const question = questionById(questionIds[index]);
-  if (!question) return <Redirect href="/territory" />;
+  if (!question) return <Redirect href="/" />;
   const choose = (choice: string) => {
     answer(question.id, choice);
     if (index + 1 >= questionIds.length) router.replace('/result');
@@ -22,7 +24,7 @@ export default function ChallengeScreen() {
       <View style={styles.battleHeader}>
         <View>
           <Text style={styles.kicker}>
-            {mode === 'conquest' ? '學校前線 · 進攻' : '學校前線 · 巡邏'}
+            {territory.name}前線 · {mode === 'conquest' ? '進攻' : '巡邏'}
           </Text>
           <Text style={styles.title}>下達作答指令</Text>
         </View>
@@ -43,8 +45,8 @@ export default function ChallengeScreen() {
           <Text style={styles.swords}>⚔</Text>
         </View>
         <View style={styles.enemy}>
-          <Text style={styles.unitIcon}>⌂</Text>
-          <Text style={styles.unitName}>學校守軍</Text>
+          <Text style={styles.unitIcon}>{territory.enemyIcon}</Text>
+          <Text style={styles.unitName}>{territory.name}守軍</Text>
         </View>
       </View>
       <View style={styles.orderPanel}>

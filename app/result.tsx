@@ -4,17 +4,20 @@ import { Redirect, router } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { questionById } from '@/data/questions';
+import { territoryById } from '@/data/territories';
 import { useGameStore } from '@/store/game';
 import { evaluateChallenge } from '@/store/progress';
 import { colors } from '@/theme';
 
 export default function ResultScreen() {
-  const { mode, attempts, commitResult, resetSession } = useGameStore();
+  const { activeTerritoryId, mode, attempts, commitResult, resetSession } = useGameStore();
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (mode && attempts.length) void commitResult().then(() => setSaved(true));
-  }, [attempts.length, commitResult, mode]);
-  if (!mode || !attempts.length) return <Redirect href="/" />;
+    if (activeTerritoryId && mode && attempts.length)
+      void commitResult().then(() => setSaved(true));
+  }, [activeTerritoryId, attempts.length, commitResult, mode]);
+  const territory = territoryById(activeTerritoryId);
+  if (!territory || !mode || !attempts.length) return <Redirect href="/" />;
   const { correctCount, incorrectIds, passed } = evaluateChallenge(mode, attempts);
   const done = () => {
     resetSession();
@@ -27,14 +30,20 @@ export default function ResultScreen() {
         <Text style={styles.victoryKicker}>{passed ? '戰役勝利' : '整隊再戰'}</Text>
         <Text style={styles.sigil}>{passed ? '◆' : '◇'}</Text>
         <Text style={styles.title}>
-          {passed ? (mode === 'conquest' ? '成功插旗' : '巡邏完成') : '防線未破'}
+          {passed
+            ? mode === 'conquest'
+              ? '成功插旗'
+              : '巡邏完成'
+            : mode === 'conquest'
+              ? '防線未破'
+              : '巡邏待續'}
         </Text>
         <Text style={styles.subtitle}>
           {passed
             ? mode === 'conquest'
-              ? '學校領地 · 已占領'
-              : '複習路線 · 已穩固'
-            : '錯題已記入巡邏簿'}
+              ? `${territory.name}領地 · 已占領`
+              : `${territory.name}巡邏線 · 已穩固`
+            : `${territory.name}錯題 · 已記入巡邏簿`}
         </Text>
       </View>
       <View style={styles.scorePanel}>
@@ -45,7 +54,9 @@ export default function ResultScreen() {
         </Text>
         <Text style={styles.scoreCopy}>
           {incorrectIds.length
-            ? `有 ${incorrectIds.length} 題答錯，已加入巡邏複習。請查看下方中文解析。`
+            ? mode === 'conquest'
+              ? `有 ${incorrectIds.length} 題答錯，已加入${territory.name}巡邏簿。請查看下方中文解析。`
+              : `仍有 ${incorrectIds.length} 題需要巡邏複習。請查看下方中文解析。`
             : '全部答對！本次沒有新增複習題目。'}
         </Text>
       </View>
