@@ -53,4 +53,9 @@ describe('deriveProgress', () => {
       passed: true,
     });
   });
+
+  it('requires every patrol answer to be correct', () => {
+    expect(evaluateChallenge('patrol', attempts([true, false])).passed).toBe(false);
+    expect(evaluateChallenge('patrol', attempts([true, true])).passed).toBe(true);
+  });
 });

@@ -15,7 +15,7 @@ export default function ResultScreen() {
     if (mode && attempts.length) void commitResult().then(() => setSaved(true));
   }, [attempts.length, commitResult, mode]);
   if (!mode || !attempts.length) return <Redirect href="/" />;
-  const { correctCount, passed } = evaluateChallenge(mode, attempts);
+  const { correctCount, incorrectIds, passed } = evaluateChallenge(mode, attempts);
   const done = () => {
     resetSession();
     router.replace('/');
@@ -44,9 +44,9 @@ export default function ResultScreen() {
           <Text style={styles.scoreSmall}> / {attempts.length}</Text>
         </Text>
         <Text style={styles.scoreCopy}>
-          {passed
-            ? 'The company carried out its orders.'
-            : 'Review the marked orders before the next march.'}
+          {incorrectIds.length
+            ? `${incorrectIds.length} missed order${incorrectIds.length === 1 ? '' : 's'} entered in the patrol ledger.`
+            : 'The company carried out every order.'}
         </Text>
       </View>
       <View style={styles.report}>

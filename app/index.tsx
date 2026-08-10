@@ -17,6 +17,7 @@ function TerrainTile({ style, icon, label }: { style: object; icon: string; labe
 export default function HomeScreen() {
   const { hydrated, territoryLevel, reviewQueue } = useGameStore();
   const occupied = territoryLevel > 0;
+  const patrolDue = occupied && reviewQueue.length > 0;
   if (!hydrated)
     return (
       <View style={styles.loading}>
@@ -76,16 +77,22 @@ export default function HomeScreen() {
           onPress={() => router.push('/territory')}
           style={({ pressed }) => [
             styles.schoolNode,
-            occupied ? styles.schoolOccupied : styles.schoolAvailable,
+            patrolDue
+              ? styles.schoolPatrolDue
+              : occupied
+                ? styles.schoolOccupied
+                : styles.schoolAvailable,
             pressed && styles.nodePressed,
           ]}
         >
           <View style={styles.nodeFlag}>
-            <Text style={styles.nodeFlagText}>{occupied ? '◆' : '!'}</Text>
+            <Text style={styles.nodeFlagText}>{patrolDue ? '!' : occupied ? '◆' : '!'}</Text>
           </View>
           <Text style={styles.schoolIcon}>⌂</Text>
           <Text style={styles.schoolName}>SCHOOL</Text>
-          <Text style={styles.schoolState}>{occupied ? 'GARRISONED' : 'AVAILABLE'}</Text>
+          <Text style={styles.schoolState}>
+            {patrolDue ? 'PATROL DUE' : occupied ? 'GARRISONED' : 'AVAILABLE'}
+          </Text>
         </Pressable>
 
         <View style={styles.marchLine}>
@@ -98,33 +105,43 @@ export default function HomeScreen() {
         <View style={styles.mapLegend}>
           <View style={styles.legendDot} />
           <Text style={styles.legendText}>
-            {occupied ? 'Territory secured' : 'Tap School to inspect'}
+            {patrolDue
+              ? 'Review patrol waiting'
+              : occupied
+                ? 'Territory secured'
+                : 'Tap School to inspect'}
           </Text>
         </View>
       </View>
 
       <View style={styles.commandPanel}>
         <View style={styles.commandTop}>
-          <View style={[styles.statusSigil, occupied && styles.statusSigilOccupied]}>
-            <Text style={styles.statusSigilText}>{occupied ? '✓' : '⚔'}</Text>
+          <View
+            style={[
+              styles.statusSigil,
+              occupied && styles.statusSigilOccupied,
+              patrolDue && styles.statusSigilPatrolDue,
+            ]}
+          >
+            <Text style={styles.statusSigilText}>{patrolDue ? '!' : occupied ? '✓' : '⚔'}</Text>
           </View>
           <View style={styles.commandCopy}>
             <Text style={styles.commandKicker}>
-              {occupied ? 'GARRISON REPORT' : 'ACTIVE WAR ORDER'}
+              {patrolDue ? 'PATROL ORDER' : occupied ? 'GARRISON REPORT' : 'ACTIVE WAR ORDER'}
             </Text>
             <Text style={styles.commandTitle}>School · Territory I</Text>
             <Text style={styles.commandBody}>
               {occupied
                 ? reviewQueue.length
-                  ? `${reviewQueue.length} question${reviewQueue.length === 1 ? '' : 's'} await patrol review.`
+                  ? `${reviewQueue.length} question${reviewQueue.length === 1 ? ' awaits' : 's await'} patrol review.`
                   : 'The district is secure. No review patrols remain.'
                 : 'Win the English skirmish to raise your banner over the school.'}
             </Text>
           </View>
         </View>
         <PrimaryButton
-          label={occupied ? 'INSPECT GARRISON' : 'MARCH TO SCHOOL'}
-          tone={occupied ? 'gold' : 'red'}
+          label={patrolDue ? 'MARCH TO PATROL' : occupied ? 'INSPECT GARRISON' : 'MARCH TO SCHOOL'}
+          tone={patrolDue || !occupied ? 'red' : 'gold'}
           onPress={() => router.push('/territory')}
         />
       </View>
@@ -311,6 +328,7 @@ const styles = StyleSheet.create({
   },
   schoolAvailable: { backgroundColor: '#70362C', borderColor: '#E79B71' },
   schoolOccupied: { backgroundColor: '#315E46', borderColor: '#8DC18A' },
+  schoolPatrolDue: { backgroundColor: '#725227', borderColor: '#E7BC67' },
   nodePressed: { transform: [{ scale: 0.97 }] },
   nodeFlag: {
     position: 'absolute',
@@ -382,6 +400,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statusSigilOccupied: { backgroundColor: colors.greenDark, borderColor: '#82A878' },
+  statusSigilPatrolDue: { backgroundColor: colors.goldDark, borderColor: '#E7BC67' },
   statusSigilText: { color: '#FFEAB8', fontSize: 23, fontWeight: '900' },
   commandCopy: { flex: 1 },
   commandKicker: { color: colors.gold, fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
