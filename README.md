@@ -8,8 +8,8 @@ LingoQuest 的第一個可玩章節：玩家從每日城市主頁沿著「學校
 - Expo Router 導覽
 - Zustand 狀態管理
 - AsyncStorage 本機持久化
-- 僅持久化各領地的 `territoryLevels` 與 `reviewQueues`；作答過程留在記憶體，結果頁才以單一 snapshot 寫入
-- 相容舊版 School 單領地存檔：啟動時會保留學校占領與錯題，餐廳、機場使用安全預設值
+- v2 snapshot 僅持久化 `version: 2`、各領地 `territoryLevels` 與全域 `reviewQueue`；作答過程留在記憶體，結果頁才一次寫入
+- 相容舊版 School 單領地與無版本三領地存檔；遷移後以題目 ID 反查領地，玩家仍從各領地獨立進入巡邏
 - 不含後端、登入、AI／語音評分、資源經濟、挑戰中途續玩、聯盟／PVP、賽季或轉蛋
 
 ## 能力定位第一個垂直切片
