@@ -8,11 +8,12 @@ import {
   createInitialProgress,
   deriveProgress,
   isTerritoryUnlocked,
+  LEGACY_PROGRESS_STORAGE_KEY,
   normalizeProgress,
   Progress,
+  PROGRESS_STORAGE_KEY,
+  reviewQueueForTerritory,
 } from '@/store/progress';
-
-const STORAGE_KEY = 'lingoquest.progress.v1';
 
 type GameState = Progress & {
   hydrated: boolean;
@@ -38,8 +39,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   attempts: [],
   hydrate: async () => {
     try {
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      const currentRaw = await AsyncStorage.getItem(PROGRESS_STORAGE_KEY);
+      const legacyRaw = currentRaw ? null : await AsyncStorage.getItem(LEGACY_PROGRESS_STORAGE_KEY);
+      const raw = currentRaw ?? legacyRaw;
       const saved = normalizeProgress(raw ? JSON.parse(raw) : null);
+      if (raw) await AsyncStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(saved));
       set({ ...saved, hydrated: true });
     } catch {
       set({ ...createInitialProgress(), hydrated: true });
@@ -48,14 +52,18 @@ export const useGameStore = create<GameState>((set, get) => ({
   begin: (territoryId, mode) => {
     const state = get();
     const territory = territoryById(territoryId);
-    const progress = { territoryLevels: state.territoryLevels, reviewQueues: state.reviewQueues };
+    const progress = {
+      version: 2 as const,
+      territoryLevels: state.territoryLevels,
+      reviewQueue: state.reviewQueue,
+    };
     if (!territory || !isTerritoryUnlocked(progress, territoryId)) return false;
 
     const ids =
       mode === 'conquest'
         ? territory.questionIds
-        : state.reviewQueues[territoryId].filter(
-            (id) => territory.questionIds.includes(id) && Boolean(questionById(id)),
+        : reviewQueueForTerritory(state.reviewQueue, territoryId).filter((id) =>
+            Boolean(questionById(id)),
           );
     if (!ids.length) return false;
 
@@ -73,16 +81,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     }));
   },
   commitResult: async () => {
-    const { territoryLevels, reviewQueues, activeTerritoryId, mode, attempts } = get();
+    const { territoryLevels, reviewQueue, activeTerritoryId, mode, attempts } = get();
     if (!activeTerritoryId || !mode || attempts.length === 0) return;
 
     const progress = deriveProgress(
-      { territoryLevels, reviewQueues },
+      { version: 2, territoryLevels, reviewQueue },
       activeTerritoryId,
       mode,
       attempts,
     );
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    await AsyncStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
     set(progress);
   },
   resetSession: () => set({ activeTerritoryId: null, mode: null, questionIds: [], attempts: [] }),

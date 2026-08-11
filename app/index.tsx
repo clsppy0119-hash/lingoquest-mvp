@@ -4,7 +4,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { Territory, TerritoryId, territories } from '@/data/territories';
 import { useGameStore } from '@/store/game';
-import { isTerritoryUnlocked } from '@/store/progress';
+import { isTerritoryUnlocked, reviewQueueForTerritory } from '@/store/progress';
 import { colors } from '@/theme';
 
 type NodeState = 'locked' | 'available' | 'occupied' | 'patrol';
@@ -69,7 +69,7 @@ function TerritoryNode({ territory, state }: { territory: Territory; state: Node
 }
 
 export default function HomeScreen() {
-  const { hydrated, territoryLevels, reviewQueues } = useGameStore();
+  const { hydrated, territoryLevels, reviewQueue } = useGameStore();
   if (!hydrated) {
     return (
       <View style={styles.loading}>
@@ -78,7 +78,13 @@ export default function HomeScreen() {
     );
   }
 
-  const progress = { territoryLevels, reviewQueues };
+  const reviewQueues = Object.fromEntries(
+    territories.map((territory) => [
+      territory.id,
+      reviewQueueForTerritory(reviewQueue, territory.id),
+    ]),
+  ) as Record<TerritoryId, string[]>;
+  const progress = { version: 2 as const, territoryLevels, reviewQueue };
   const states = Object.fromEntries(
     territories.map((territory) => {
       const occupied = territoryLevels[territory.id] > 0;

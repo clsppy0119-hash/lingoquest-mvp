@@ -4,18 +4,23 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { territories, territoryById } from '@/data/territories';
 import { useGameStore } from '@/store/game';
-import { ChallengeMode, CONQUEST_MIN_CORRECT, isTerritoryUnlocked } from '@/store/progress';
+import {
+  ChallengeMode,
+  CONQUEST_MIN_CORRECT,
+  isTerritoryUnlocked,
+  reviewQueueForTerritory,
+} from '@/store/progress';
 import { colors } from '@/theme';
 
 export default function TerritoryScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const requestedId = Array.isArray(params.id) ? params.id[0] : params.id;
   const territory = territoryById(requestedId) ?? territories[0];
-  const { territoryLevels, reviewQueues, begin } = useGameStore();
-  const progress = { territoryLevels, reviewQueues };
+  const { territoryLevels, reviewQueue: globalReviewQueue, begin } = useGameStore();
+  const progress = { version: 2 as const, territoryLevels, reviewQueue: globalReviewQueue };
   const occupied = territoryLevels[territory.id] > 0;
   const unlocked = isTerritoryUnlocked(progress, territory.id);
-  const reviewQueue = reviewQueues[territory.id];
+  const reviewQueue = reviewQueueForTerritory(globalReviewQueue, territory.id);
   const prerequisite = territoryById(territory.prerequisiteId);
 
   const launch = (mode: ChallengeMode) => {

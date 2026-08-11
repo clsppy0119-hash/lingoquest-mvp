@@ -3,53 +3,111 @@ import { TerritoryId, territories, territoryIds } from '@/data/territories';
 export type ChallengeMode = 'conquest' | 'patrol';
 export type Attempt = { questionId: string; selected: string; correct: boolean };
 export type TerritoryLevels = Record<TerritoryId, number>;
-export type ReviewQueues = Record<TerritoryId, string[]>;
-export type Progress = { territoryLevels: TerritoryLevels; reviewQueues: ReviewQueues };
+export type Progress = { version: 2; territoryLevels: TerritoryLevels; reviewQueue: string[] };
 
-type LegacyProgress = { territoryLevel?: unknown; reviewQueue?: unknown };
+type SavedProgress = {
+  version?: unknown;
+  territoryLevel?: unknown;
+  territoryLevels?: unknown;
+  reviewQueue?: unknown;
+  reviewQueues?: unknown;
+};
 
 export const CONQUEST_MIN_CORRECT = 2;
+export const PROGRESS_STORAGE_KEY = 'lingoquest.progress.v2';
+export const LEGACY_PROGRESS_STORAGE_KEY = 'lingoquest.progress.v1';
 
 export const createInitialProgress = (): Progress => ({
+  version: 2,
   territoryLevels: { school: 0, restaurant: 0, airport: 0 },
-  reviewQueues: { school: [], restaurant: [], airport: [] },
+  reviewQueue: [],
 });
 
 const asLevel = (value: unknown) =>
-  typeof value === 'number' && Number.isFinite(value) && value > 0 ? 1 : 0;
+  typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+
+const questionTerritory = new Map(
+  territories.flatMap((territory) =>
+    territory.questionIds.map((questionId) => [questionId, territory.id] as const),
+  ),
+);
+
+export const territoryIdForQuestion = (questionId: string) => questionTerritory.get(questionId);
 
 const asQueue = (value: unknown) =>
   Array.isArray(value)
-    ? Array.from(new Set(value.filter((item): item is string => typeof item === 'string')))
+    ? Array.from(
+        new Set(
+          value.filter(
+            (item): item is string =>
+              typeof item === 'string' && Boolean(territoryIdForQuestion(item)),
+          ),
+        ),
+      )
     : [];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const hasOwn = (value: Record<string, unknown>, key: string) =>
+  Object.prototype.hasOwnProperty.call(value, key);
+
+const normalizeLevels = (value: unknown): TerritoryLevels => {
+  const saved = isRecord(value) ? value : {};
+  return {
+    school: asLevel(saved.school),
+    restaurant: asLevel(saved.restaurant),
+    airport: asLevel(saved.airport),
+  };
+};
+
+const legacySchoolQueue = (value: unknown) =>
+  asQueue(value).filter((questionId) => territoryIdForQuestion(questionId) === 'school');
+
+const flattenPluralQueues = (value: unknown) => {
+  const saved = isRecord(value) ? value : {};
+  return asQueue(
+    territoryIds.flatMap((territoryId) =>
+      Array.isArray(saved[territoryId]) ? saved[territoryId] : [],
+    ),
+  );
+};
+
+export const reviewQueueForTerritory = (reviewQueue: string[], territoryId: TerritoryId) =>
+  reviewQueue.filter((questionId) => territoryIdForQuestion(questionId) === territoryId);
 
 export const normalizeProgress = (value: unknown): Progress => {
   const initial = createInitialProgress();
-  if (!value || typeof value !== 'object') return initial;
+  if (!isRecord(value)) return initial;
 
-  const saved = value as Partial<Progress> & LegacyProgress;
-  const savedLevels = saved.territoryLevels;
-  const savedQueues = saved.reviewQueues;
+  const saved = value as SavedProgress & Record<string, unknown>;
 
-  if (savedLevels && savedQueues) {
+  if (saved.version === 2) {
     return {
-      territoryLevels: {
-        school: asLevel(savedLevels.school),
-        restaurant: asLevel(savedLevels.restaurant),
-        airport: asLevel(savedLevels.airport),
-      },
-      reviewQueues: {
-        school: asQueue(savedQueues.school),
-        restaurant: asQueue(savedQueues.restaurant),
-        airport: asQueue(savedQueues.airport),
-      },
+      version: 2,
+      territoryLevels: normalizeLevels(saved.territoryLevels),
+      reviewQueue: asQueue(saved.reviewQueue),
+    };
+  }
+
+  const hasPluralLevels = hasOwn(saved, 'territoryLevels');
+  const hasPluralQueues = hasOwn(saved, 'reviewQueues');
+  if (hasPluralLevels || hasPluralQueues) {
+    return {
+      version: 2,
+      territoryLevels: hasPluralLevels
+        ? normalizeLevels(saved.territoryLevels)
+        : { ...initial.territoryLevels, school: asLevel(saved.territoryLevel) },
+      reviewQueue: hasPluralQueues
+        ? flattenPluralQueues(saved.reviewQueues)
+        : legacySchoolQueue(saved.reviewQueue),
     };
   }
 
   return {
-    ...initial,
+    version: 2,
     territoryLevels: { ...initial.territoryLevels, school: asLevel(saved.territoryLevel) },
-    reviewQueues: { ...initial.reviewQueues, school: asQueue(saved.reviewQueue) },
+    reviewQueue: legacySchoolQueue(saved.reviewQueue),
   };
 };
 
@@ -90,14 +148,13 @@ export const deriveProgress = (
 ): Progress => {
   const { incorrectIds, passed } = evaluateChallenge(mode, attempts);
   const attempted = new Set(attempts.map((attempt) => attempt.questionId));
-  const reviewQueue = Array.from(
-    new Set([
-      ...progress.reviewQueues[territoryId].filter((id) => !attempted.has(id)),
-      ...incorrectIds,
-    ]),
-  );
+  const reviewQueue = asQueue([
+    ...progress.reviewQueue.filter((id) => !attempted.has(id)),
+    ...incorrectIds,
+  ]);
 
   return {
+    version: 2,
     territoryLevels: {
       ...progress.territoryLevels,
       [territoryId]:
@@ -105,6 +162,6 @@ export const deriveProgress = (
           ? Math.max(1, progress.territoryLevels[territoryId])
           : progress.territoryLevels[territoryId],
     },
-    reviewQueues: { ...progress.reviewQueues, [territoryId]: reviewQueue },
+    reviewQueue,
   };
 };
