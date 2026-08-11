@@ -67,6 +67,7 @@ export const determinePlacementBranch = (attempts: PlacementAttempt[]): Placemen
   const comprehension = independentCorrectCount(sharedAttempts, 'comprehension');
   const production = independentCorrectCount(sharedAttempts, 'production');
 
+  if (comprehension + production === 0) return 'meaning-support';
   if (comprehension < production) return 'meaning-support';
   if (production < comprehension) return 'production-support';
   return 'balanced';
@@ -171,7 +172,7 @@ const statusFromEvidence = (
   const hintedCorrect = attempts.filter((attempt) => attempt.correct && attempt.usedHint).length;
 
   if (independentCorrect >= 4 && productionIndependent >= 2) return 'independent';
-  if (correct >= 3 && productionCorrect >= 1 && (hintedCorrect >= 1 || independentCorrect >= 2)) {
+  if (correct >= 3 && productionCorrect >= 1 && hintedCorrect >= 1) {
     return 'with-hints';
   }
   return 'practice-first';

@@ -143,6 +143,21 @@ describe('placement content and routing', () => {
     expect(determinePlacementBranch(attempts)).toBe('balanced');
   });
 
+  it.each([
+    ['all answers are wrong', false, false],
+    ['all correct answers use hints', true, true],
+  ])('routes to meaning support when %s', (_label, correct, usedHint) => {
+    const attempts = sharedPlacementItems.map((item) => ({
+      itemId: item.id,
+      objectiveId: item.objectiveId,
+      skill: item.skill,
+      correct,
+      usedHint,
+    }));
+
+    expect(determinePlacementBranch(attempts)).toBe('meaning-support');
+  });
+
   it('records hint use separately from correctness', () => {
     const item = placementItemById('shared-request-understand-pencil');
     if (!item || item.kind !== 'choice') throw new Error('missing test item');
@@ -181,6 +196,26 @@ describe('placement profile evidence rules', () => {
     const profile = buildPlacementProfile('balanced', attempts);
     expect(profile.entries.map((entry) => entry.status)).toEqual(['with-hints', 'with-hints']);
     expect(profile.nextTaskTitle).toContain('無提示變式');
+  });
+
+  it('does not assign with-hints without any hint-assisted correct evidence', () => {
+    const branchProductionIds = new Set([
+      'balanced-greeting-produce-meet',
+      'balanced-request-produce-help',
+    ]);
+    const attempts = attemptsForRoute('balanced', (itemId, skill) => ({
+      correct: skill === 'comprehension' || branchProductionIds.has(itemId),
+      usedHint: false,
+    }));
+    const profile = buildPlacementProfile('balanced', attempts);
+
+    expect(profile.entries.map((entry) => entry.hintedCorrect)).toEqual([0, 0]);
+    expect(profile.entries.map((entry) => entry.productionIndependentCorrect)).toEqual([1, 1]);
+    expect(profile.entries.map((entry) => entry.status)).toEqual([
+      'practice-first',
+      'practice-first',
+    ]);
+    expect(profile.nextTaskTitle).toContain('語塊重組');
   });
 
   it('recommends production practice when understanding outpaces production', () => {
